@@ -87,17 +87,27 @@ adminLoginForm.addEventListener("submit", unlockAdmin);
 render();
 loadRemoteAppointments();
 
-async function loadRemoteAppointments() {
-  try {
-    const response = await fetch(`${API_URL}?t=${Date.now()}`);
-    const data = await response.json();
+function loadRemoteAppointments() {
+  const callbackName = `receiveAvailability_${Date.now()}`;
+  const script = document.createElement("script");
+
+  window[callbackName] = (data) => {
     appointments = normalizeRemoteAppointments(data.appointments || []);
     remoteReady = true;
     save(STORAGE_KEY, appointments);
     render();
-  } catch (error) {
-    console.warn("No se pudieron cargar las citas de Google Sheets", error);
-  }
+    script.remove();
+    delete window[callbackName];
+  };
+
+  script.onerror = () => {
+    console.warn("No se pudo cargar la disponibilidad de Google Sheets");
+    script.remove();
+    delete window[callbackName];
+  };
+
+  script.src = `${API_URL}?public=availability&callback=${callbackName}&t=${Date.now()}`;
+  document.body.appendChild(script);
 }
 
 function render() {
@@ -556,6 +566,7 @@ function escapeHtml(value) {
     return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char];
   });
 }
+
 
 
 
