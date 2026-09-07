@@ -556,3 +556,57 @@ textarea:focus {
     font-size: 2.45rem;
   }
 }
+
+.instructions {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.7fr) minmax(0, 1.3fr);
+  gap: 22px;
+  align-items: start;
+  margin-bottom: 24px;
+  padding: clamp(18px, 3vw, 26px);
+  border: 1px solid var(--line);
+  border-left: 7px solid var(--pce-yellow);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 16px 46px rgba(39, 49, 111, 0.08);
+}
+
+.instructions ol {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 24px;
+}
+
+.instructions li {
+  line-height: 1.55;
+  font-weight: 600;
+}
+
+@media (max-width: 680px) {
+  .instructions {
+    grid-template-columns: 1fr;
+  }
+}
+
+#instrucciones,
+#agenda,
+#reserva,
+#mi-cita,
+#admin {
+  scroll-margin-top: 118px;
+}
+
+@media (max-width: 680px) {
+  html {
+    scroll-padding-top: 154px;
+  }
+
+  #instrucciones,
+  #agenda,
+  #reserva,
+  #mi-cita,
+  #admin {
+    scroll-margin-top: 154px;
+  }
+}
