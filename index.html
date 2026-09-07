@@ -1,0 +1,209 @@
+﻿<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gestor de citas IA | Grupo Escuela PCE</title>
+    <meta
+      name="description"
+      content="Calendario interno para agendar reuniones individuales sobre el uso de herramientas de IA en Grupo Escuela PCE."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <img
+          src="https://www.academiam25.com/wp-content/uploads/2025/06/2-logos.png"
+          alt="Logos Grupo Escuela PCE"
+        />
+        <div>
+          <strong>Departamento IA</strong>
+          <span>Grupo Escuela PCE</span>
+        </div>
+      </div>
+      <nav aria-label="Secciones">
+        <a href="#agenda">Agenda</a>
+        <a href="#reserva">Reservar</a>
+        <a href="#mi-cita">Mi cita</a>
+        <a href="#admin">Administración</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="intro">
+        <div class="intro-copy">
+          <p class="eyebrow hero-pill">Departamento IA · Grupo Escuela PCE</p>
+          <h1 id="purposeTitle">Evaluación inicial del uso de herramientas de IA</h1>
+          <p id="purposeDescription">
+            Queremos entender qué herramientas estás usando, qué te resulta útil y qué bloqueos podemos ayudarte a resolver.
+          </p>
+        </div>
+        <div class="rules-panel" aria-label="Reglas de disponibilidad">
+          <h2>Disponibilidad</h2>
+          <p>
+            Las citas se pueden reservar del <strong>14 de septiembre de 2026</strong> al <strong>2 de octubre de 2026, según disponibilidad.</strong>
+          </p>
+          <div class="brand-badges"><span>100% acompañamiento</span><span>IA práctica</span></div>
+          <div class="rule-grid">
+            <span>Periodo</span><strong id="rangeText">14 sept 2026 - 02 oct 2026</strong>
+            <span>Duración</span><strong>1 hora</strong>
+          </div>
+        </div>
+      </section>
+
+      <section id="agenda" class="workspace">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Calendario disponible</p>
+            <h2>Elige una fecha y una hora</h2>
+          </div>
+          <div class="controls">
+            <button id="prevWeek" type="button" aria-label="Semana anterior">‹</button>
+            <button id="today" type="button">Inicio</button>
+            <button id="nextWeek" type="button" aria-label="Semana siguiente">›</button>
+          </div>
+        </div>
+        <div id="calendar" class="calendar" aria-live="polite"></div>
+      </section>
+
+      <section id="reserva" class="booking-layout">
+        <form id="bookingForm" class="booking-card">
+          <div class="section-head compact">
+            <div>
+              <p class="eyebrow">Datos de la cita</p>
+              <h2>Reserva seleccionada</h2>
+            </div>
+            <span id="selectedSlot" class="selected-slot">Sin seleccionar</span>
+          </div>
+
+          <label>
+            Nombre y apellidos
+            <input id="name" name="name" autocomplete="name" required />
+          </label>
+          <label>
+            Puesto
+            <input id="role" name="role" required />
+          </label>
+          <label>
+            Correo electrónico
+            <input id="email" name="email" type="email" autocomplete="email" required />
+          </label>
+          <label>
+            Comentario opcional
+            <textarea
+              id="notes"
+              name="notes"
+              rows="3"
+              placeholder="Ej.: uso ChatGPT a diario, me cuesta empezar, quiero ver casos de mi puesto..."
+            ></textarea>
+          </label>
+          <button class="primary" type="submit">Confirmar cita</button>
+          <p id="formMessage" class="form-message" role="status"></p>
+        </form>
+
+        <section id="mi-cita" class="config-card">
+          <h2>Gestionar mi cita</h2>
+          <form id="selfForm">
+            <label>
+              Nombre y apellidos
+              <input name="selfName" required />
+            </label>
+            <label>
+              Correo electrónico
+              <input name="selfEmail" type="email" required />
+            </label>
+            <button type="submit">Buscar mi cita</button>
+          </form>
+          <div id="selfResults" class="appointments self-results"></div>
+        </section>
+      </section>
+
+      <section id="admin" class="admin">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Uso interno</p>
+            <h2>Administración</h2>
+          </div>
+        </div>
+
+        <form id="adminLoginForm" class="admin-login">
+          <label>
+            Administrador
+            <input name="adminUser" autocomplete="username" required />
+          </label>
+          <label>
+            Contraseña
+            <input name="adminPassword" type="password" autocomplete="current-password" required />
+          </label>
+          <button class="primary" type="submit">Entrar</button>
+          <p id="adminMessage" class="form-message" role="status"></p>
+        </form>
+
+        <div id="adminPanel" hidden>
+          <div class="admin-grid">
+            <section class="config-card flat">
+              <h2>Tipo de cita</h2>
+              <label>
+                Intención
+                <input id="purposeInput" />
+              </label>
+              <label>
+                Descripción
+                <textarea id="descriptionInput" rows="3"></textarea>
+              </label>
+              <label>
+                Duración
+                <select id="duration">
+                  <option value="60">1 hora</option>
+                  <option value="45">45 minutos</option>
+                  <option value="30">30 minutos</option>
+                </select>
+              </label>
+              <button id="savePurpose" type="button">Guardar configuración</button>
+            </section>
+
+            <section class="config-card flat">
+              <h2>Bloqueos</h2>
+              <label>
+                Fecha
+                <input id="blockedDate" type="date" min="2026-09-14" max="2026-10-02" />
+              </label>
+              <label>
+                Turno
+                <select id="blockedTurn">
+                  <option value="morning">Mañana</option>
+                  <option value="afternoon">Tarde</option>
+                </select>
+              </label>
+              <button id="addBlockedSlot" type="button">Bloquear turno</button>
+              <div id="blockedList" class="blocked-list"></div>
+            </section>
+          </div>
+
+          <div class="section-head admin-list-head">
+            <div>
+              <p class="eyebrow">Citas reservadas</p>
+              <h2>Panel de Miguel</h2>
+            </div>
+            <div class="controls">
+              <button id="exportJson" type="button">Exportar JSON</button>
+              <button id="exportCsv" type="button">Exportar CSV</button>
+              <button id="adminLogout" type="button">Salir</button>
+            </div>
+          </div>
+          <div id="appointments" class="appointments"></div>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
+
+
+
+
