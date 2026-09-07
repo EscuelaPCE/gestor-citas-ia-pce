@@ -256,7 +256,7 @@ function bookAppointment(event) {
   save(STORAGE_KEY, appointments);
   createRemoteAppointment(appointment);
   bookingForm.reset();
-  formMessage.innerHTML = '<span class="ok">Cita guardada. El turno contrario queda cerrado para ese día.</span>';
+  formMessage.innerHTML = '<span class="ok">Cita guardada.</span>';
   selected = null;
   selectedSlot.textContent = "Sin seleccionar";
   render();
