@@ -256,7 +256,7 @@ function bookAppointment(event) {
   save(STORAGE_KEY, appointments);
   createRemoteAppointment(appointment);
   bookingForm.reset();
-  formMessage.innerHTML = '<span class="ok">Cita guardada.</span>';
+  formMessage.innerHTML = '<span class="ok">Cita guardada</span>';
   selected = null;
   selectedSlot.textContent = "Sin seleccionar";
   render();
@@ -265,10 +265,38 @@ loadRemoteAppointments();
 
 function findOwnAppointments(event) {
   event.preventDefault();
-  const name = normalize(selfForm.elements.selfName.value);
-  const email = normalize(selfForm.elements.selfEmail.value);
-  selfMatches = appointments.filter((item) => normalize(item.name) === name && normalize(item.email) === email);
-  renderSelfResults();
+  const name = selfForm.elements.selfName.value.trim();
+  const email = selfForm.elements.selfEmail.value.trim().toLowerCase();
+  selfResults.innerHTML = '<p class="form-message">Buscando tu cita...</p>';
+  loadOwnAppointments(name, email);
+}
+
+function loadOwnAppointments(name, email) {
+  const callbackName = `receiveOwnAppointments_${Date.now()}`;
+  const script = document.createElement("script");
+
+  window[callbackName] = (data) => {
+    selfMatches = normalizeRemoteAppointments(data.appointments || []);
+    renderSelfResults();
+    script.remove();
+    delete window[callbackName];
+  };
+
+  script.onerror = () => {
+    selfResults.innerHTML = '<p class="form-message danger">No se pudo consultar la cita. Inténtalo de nuevo.</p>';
+    script.remove();
+    delete window[callbackName];
+  };
+
+  const params = new URLSearchParams({
+    action: "self",
+    name,
+    email,
+    callback: callbackName,
+    t: String(Date.now()),
+  });
+  script.src = `${API_URL}?${params.toString()}`;
+  document.body.appendChild(script);
 }
 
 function moveAppointment(id, ownMode) {
@@ -566,6 +594,10 @@ function escapeHtml(value) {
     return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char];
   });
 }
+
+
+
+
 
 
 
