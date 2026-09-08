@@ -9,7 +9,7 @@ const DEFAULT_CONFIG = {
   description:
     "Queremos entender qué herramientas estás usando, qué te resulta útil y qué bloqueos podemos ayudarte a resolver.",
   startDate: "2026-09-14",
-  endDate: "2026-10-02",
+  endDate: "2026-10-09",
   blockedSlots: [{ date: "2026-09-17", turn: "afternoon", reason: "Tarde no disponible" }],
   duration: 60,
   googleForm: {
@@ -594,6 +594,7 @@ function escapeHtml(value) {
     return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char];
   });
 }
+
 
 
 

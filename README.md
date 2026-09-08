@@ -5,7 +5,7 @@ Primera versión de una web interna para agendar reuniones individuales sobre el
 ## Qué incluye
 
 - Calendario semanal de lunes a viernes.
-- Periodo de reserva limitado del lunes 14 de septiembre de 2026 al viernes 2 de octubre de 2026.
+- Periodo de reserva limitado del lunes 14 de septiembre de 2026 al viernes 9 de octubre de 2026.
 - Tarde del 17 de septiembre de 2026 bloqueada por defecto.
 - Citas de 1 hora por defecto, con opción administrativa de 45 o 30 minutos.
 - Datos de reserva: nombre, puesto, correo electrónico y comentario opcional.
@@ -78,3 +78,4 @@ googleForm: {
 ```
 
 Con esta opción, la web mantiene su calendario y su lógica de disponibilidad, y Google Forms sirve como registro externo con aviso por email.
+
