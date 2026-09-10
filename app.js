@@ -1,41 +1,21 @@
-﻿const CONFIG_KEY = "pce-ai-booking-config-v2";
-const STORAGE_KEY = "pce-ai-appointments-v2";
-const ADMIN_USER = "Miguel";
-const ADMIN_PASSWORD = "Miscitasconmike1!";
+﻿const STORAGE_KEY = "pce-ai-appointments-v2";
 const API_URL = "https://script.google.com/macros/s/AKfycbx2IHkunHMMSGUNCsaYohEBQp3bAMNG1Y3dWkB3GXax4-xfritQ5fOiUt4ryWOOtzmOMA/exec";
 
-const DEFAULT_CONFIG = {
+const CONFIG = {
   purpose: "Evaluación inicial del uso de herramientas de IA",
-  description:
-    "Queremos entender qué herramientas estás usando, qué te resulta útil y qué bloqueos podemos ayudarte a resolver.",
+  description: "Queremos entender qué herramientas estás usando, qué te resulta útil y qué bloqueos podemos ayudarte a resolver.",
   startDate: "2026-09-14",
   endDate: "2026-10-09",
-  blockedSlots: [{ date: "2026-09-17", turn: "afternoon", reason: "Tarde no disponible" }],
   duration: 60,
-  googleForm: {
-    enabled: true,
-    actionUrl: "https://docs.google.com/forms/d/e/1FAIpQLSc-ajM1P18sbJCV1J7t3o0zJWoL_Ik9q7xE77tEwsj_lFMZcQ/formResponse",
-    fields: {
-      name: "entry.1855581463",
-      role: "entry.1288801672",
-      email: "entry.1020080073",
-      date: "entry.1482267496",
-      time: "entry.199423905",
-      purpose: "entry.329651944",
-      notes: "entry.2073710110",
-    },
-  },
+  blockedSlots: [{ date: "2026-09-17", turn: "afternoon", reason: "Tarde no disponible" }],
 };
 
 const MORNING = ["09:00", "10:00", "11:00", "12:00"];
 const AFTERNOON = ["16:00", "17:00", "18:00", "19:00"];
 
-let config = loadConfig();
 let appointments = loadArray(STORAGE_KEY, []);
-let remoteReady = false;
-let currentMonday = getMonday(new Date(`${config.startDate}T00:00:00`));
+let currentMonday = getMonday(parseDate(CONFIG.startDate));
 let selected = null;
-let adminUnlocked = false;
 let selfMatches = [];
 
 const calendar = document.querySelector("#calendar");
@@ -46,95 +26,49 @@ const selectedSlot = document.querySelector("#selectedSlot");
 const bookingForm = document.querySelector("#bookingForm");
 const selfForm = document.querySelector("#selfForm");
 const selfResults = document.querySelector("#selfResults");
-const adminLoginForm = document.querySelector("#adminLoginForm");
-const adminPanel = document.querySelector("#adminPanel");
-const adminMessage = document.querySelector("#adminMessage");
-const appointmentsEl = document.querySelector("#appointments");
-const blockedList = document.querySelector("#blockedList");
-const purposeInput = document.querySelector("#purposeInput");
-const descriptionInput = document.querySelector("#descriptionInput");
-const durationSelect = document.querySelector("#duration");
 const formMessage = document.querySelector("#formMessage");
 
 document.querySelector("#prevWeek").addEventListener("click", () => changeWeek(-7));
 document.querySelector("#nextWeek").addEventListener("click", () => changeWeek(7));
 document.querySelector("#today").addEventListener("click", () => {
-  currentMonday = getMonday(new Date(`${config.startDate}T00:00:00`));
+  currentMonday = getMonday(parseDate(CONFIG.startDate));
   render();
-loadRemoteAppointments();
-});
-document.querySelector("#addBlockedSlot").addEventListener("click", addBlockedSlot);
-document.querySelector("#savePurpose").addEventListener("click", savePurpose);
-document.querySelector("#exportJson").addEventListener("click", exportJson);
-document.querySelector("#exportCsv").addEventListener("click", exportCsv);
-document.querySelector("#adminLogout").addEventListener("click", () => {
-  adminUnlocked = false;
-  render();
-loadRemoteAppointments();
-});
-
-durationSelect.addEventListener("change", () => {
-  config.duration = Number(durationSelect.value);
-  save(CONFIG_KEY, config);
-  render();
-loadRemoteAppointments();
+  loadRemoteAppointments();
 });
 
 bookingForm.addEventListener("submit", bookAppointment);
 selfForm.addEventListener("submit", findOwnAppointments);
-adminLoginForm.addEventListener("submit", unlockAdmin);
 
 render();
 loadRemoteAppointments();
 
 function loadRemoteAppointments() {
-  const callbackName = `receiveAvailability_${Date.now()}`;
-  const script = document.createElement("script");
-
-  window[callbackName] = (data) => {
+  loadJsonp({ public: "availability" }, (data) => {
     appointments = normalizeRemoteAppointments(data.appointments || []);
-    remoteReady = true;
     save(STORAGE_KEY, appointments);
     render();
-    script.remove();
-    delete window[callbackName];
-  };
-
-  script.onerror = () => {
-    console.warn("No se pudo cargar la disponibilidad de Google Sheets");
-    script.remove();
-    delete window[callbackName];
-  };
-
-  script.src = `${API_URL}?public=availability&callback=${callbackName}&t=${Date.now()}`;
-  document.body.appendChild(script);
+  }, "No se pudo cargar la disponibilidad de Google Sheets");
 }
 
 function render() {
   renderConfig();
   renderCalendar();
   renderSelfResults();
-  renderAdmin();
 }
 
 function renderConfig() {
-  purposeTitle.textContent = config.purpose;
-  purposeDescription.textContent = config.description;
-  rangeText.textContent = `${formatDate(parseDate(config.startDate))} - ${formatDate(parseDate(config.endDate))}`;
-  durationSelect.value = String(config.duration);
-  purposeInput.value = config.purpose;
-  descriptionInput.value = config.description;
+  purposeTitle.textContent = CONFIG.purpose;
+  purposeDescription.textContent = CONFIG.description;
+  rangeText.textContent = `${formatDate(parseDate(CONFIG.startDate))} - ${formatDate(parseDate(CONFIG.endDate))}`;
 }
 
 function renderCalendar() {
   calendar.innerHTML = "";
   const days = Array.from({ length: 5 }, (_, index) => addDays(currentMonday, index));
-  const morning = buildSlots(MORNING, config.duration);
-  const afternoon = buildSlots(AFTERNOON, config.duration);
 
   days.forEach((day) => {
     const date = toISO(day);
-    const outOfRange = date < config.startDate || date > config.endDate;
+    const outOfRange = date < CONFIG.startDate || date > CONFIG.endDate;
     const dayAppointments = appointments.filter((item) => item.date === date);
     const lockedTurn = getLockedTurn(dayAppointments);
     const article = document.createElement("article");
@@ -143,8 +77,8 @@ function renderCalendar() {
     const slots = article.querySelector(".slots");
 
     [
-      ...morning.map((time) => ({ time, turn: "morning" })),
-      ...afternoon.map((time) => ({ time, turn: "afternoon" })),
+      ...MORNING.map((time) => ({ time, turn: "morning" })),
+      ...AFTERNOON.map((time) => ({ time, turn: "afternoon" })),
     ].forEach(({ time, turn }) => {
       const booked = appointments.find((item) => item.date === date && item.time === time);
       const blocked = getBlockedSlot(date, turn);
@@ -176,30 +110,10 @@ function renderSelfResults() {
   }
 
   selfResults.innerHTML = "";
-  selfMatches.forEach((item) => selfResults.appendChild(appointmentRow(item, true)));
+  selfMatches.forEach((item) => selfResults.appendChild(appointmentRow(item)));
 }
 
-function renderAdmin() {
-  adminLoginForm.hidden = adminUnlocked;
-  adminPanel.hidden = !adminUnlocked;
-  if (!adminUnlocked) return;
-  renderAppointments();
-  renderBlockedSlots();
-}
-
-function renderAppointments() {
-  if (!appointments.length) {
-    appointmentsEl.innerHTML = '<p class="form-message">Todavía no hay citas reservadas.</p>';
-    return;
-  }
-  appointmentsEl.innerHTML = "";
-  appointments
-    .slice()
-    .sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))
-    .forEach((item) => appointmentsEl.appendChild(appointmentRow(item, false)));
-}
-
-function appointmentRow(item, ownMode) {
+function appointmentRow(item) {
   const row = document.createElement("article");
   row.className = "appointment";
   row.innerHTML = `
@@ -211,8 +125,8 @@ function appointmentRow(item, ownMode) {
     <button type="button" data-action="move">Mover</button>
     <button type="button" class="danger" data-action="cancel">Cancelar</button>
   `;
-  row.querySelector('[data-action="move"]').addEventListener("click", () => moveAppointment(item.id, ownMode));
-  row.querySelector('[data-action="cancel"]').addEventListener("click", () => cancelAppointment(item.id, ownMode));
+  row.querySelector('[data-action="move"]').addEventListener("click", () => moveAppointment(item.id));
+  row.querySelector('[data-action="cancel"]').addEventListener("click", () => cancelAppointment(item.id));
   return row;
 }
 
@@ -240,11 +154,19 @@ function bookAppointment(event) {
     return;
   }
 
+  if (appointments.some((item) => item.date === selected.date && item.time === selected.time)) {
+    formMessage.textContent = "Ese hueco ya aparece como reservado. Elige otra hora.";
+    selected = null;
+    selectedSlot.textContent = "Sin seleccionar";
+    render();
+    return;
+  }
+
   const appointment = {
     id: crypto.randomUUID(),
     ...selected,
-    purpose: config.purpose,
-    duration: config.duration,
+    purpose: CONFIG.purpose,
+    duration: CONFIG.duration,
     name: bookingForm.elements.name.value.trim(),
     role: bookingForm.elements.role.value.trim(),
     email: bookingForm.elements.email.value.trim().toLowerCase(),
@@ -254,13 +176,13 @@ function bookAppointment(event) {
 
   appointments.push(appointment);
   save(STORAGE_KEY, appointments);
-  createRemoteAppointment(appointment);
+  postRemote({ action: "create", ...appointment });
   bookingForm.reset();
   formMessage.innerHTML = '<span class="ok">Cita guardada</span>';
   selected = null;
   selectedSlot.textContent = "Sin seleccionar";
   render();
-loadRemoteAppointments();
+  setTimeout(loadRemoteAppointments, 1200);
 }
 
 function findOwnAppointments(event) {
@@ -268,73 +190,61 @@ function findOwnAppointments(event) {
   const name = selfForm.elements.selfName.value.trim();
   const email = selfForm.elements.selfEmail.value.trim().toLowerCase();
   selfResults.innerHTML = '<p class="form-message">Buscando tu cita...</p>';
-  loadOwnAppointments(name, email);
+
+  loadJsonp({ action: "self", name, email }, (data) => {
+    selfMatches = normalizeRemoteAppointments(data.appointments || []);
+    renderSelfResults();
+  }, "No se pudo consultar la cita. Inténtalo de nuevo.");
 }
 
-function loadOwnAppointments(name, email) {
-  const callbackName = `receiveOwnAppointments_${Date.now()}`;
+function moveAppointment(id) {
+  const item = selfMatches.find((appointment) => appointment.id === id);
+  if (!selected) {
+    formMessage.textContent = "Selecciona en el calendario la nueva hora y después pulsa Mover en tu cita.";
+    return;
+  }
+
+  Object.assign(item, selected, { duration: CONFIG.duration });
+  postRemote({ action: "move", ...item });
+  selected = null;
+  selectedSlot.textContent = "Sin seleccionar";
+  formMessage.textContent = "Cita movida correctamente.";
+  render();
+  setTimeout(() => {
+    loadRemoteAppointments();
+    refreshSelfMatches();
+  }, 1200);
+}
+
+function cancelAppointment(id) {
+  selfMatches = selfMatches.filter((item) => item.id !== id);
+  postRemote({ action: "cancel", id });
+  render();
+  setTimeout(loadRemoteAppointments, 1200);
+}
+
+function loadJsonp(params, onSuccess, errorMessage) {
+  const callbackName = `callback_${Date.now()}_${Math.round(Math.random() * 100000)}`;
   const script = document.createElement("script");
 
   window[callbackName] = (data) => {
-    selfMatches = normalizeRemoteAppointments(data.appointments || []);
-    renderSelfResults();
+    onSuccess(data);
     script.remove();
     delete window[callbackName];
   };
 
   script.onerror = () => {
-    selfResults.innerHTML = '<p class="form-message danger">No se pudo consultar la cita. Inténtalo de nuevo.</p>';
+    console.warn(errorMessage);
     script.remove();
     delete window[callbackName];
+    if (errorMessage.includes("consultar")) {
+      selfResults.innerHTML = `<p class="form-message danger">${errorMessage}</p>`;
+    }
   };
 
-  const params = new URLSearchParams({
-    action: "self",
-    name,
-    email,
-    callback: callbackName,
-    t: String(Date.now()),
-  });
-  script.src = `${API_URL}?${params.toString()}`;
+  const query = new URLSearchParams({ ...params, callback: callbackName, t: String(Date.now()) });
+  script.src = `${API_URL}?${query.toString()}`;
   document.body.appendChild(script);
-}
-
-function moveAppointment(id, ownMode) {
-  const item = appointments.find((appointment) => appointment.id === id);
-  if (!selected) {
-    formMessage.textContent = "Selecciona en el calendario la nueva hora y después pulsa Mover en tu cita.";
-    return;
-  }
-  Object.assign(item, selected, { duration: config.duration });
-  save(STORAGE_KEY, appointments);
-  updateRemoteAppointment(item);
-  selected = null;
-  selectedSlot.textContent = "Sin seleccionar";
-  formMessage.textContent = "Cita movida correctamente.";
-  if (ownMode) refreshSelfMatches();
-  render();
-loadRemoteAppointments();
-}
-
-function cancelAppointment(id, ownMode) {
-  appointments = appointments.filter((item) => item.id !== id);
-  save(STORAGE_KEY, appointments);
-  cancelRemoteAppointment(id);
-  if (ownMode) refreshSelfMatches();
-  render();
-loadRemoteAppointments();
-}
-
-async function createRemoteAppointment(appointment) {
-  await postRemote({ action: "create", ...appointment });
-}
-
-async function updateRemoteAppointment(appointment) {
-  await postRemote({ action: "move", ...appointment });
-}
-
-async function cancelRemoteAppointment(id) {
-  await postRemote({ action: "cancel", id });
 }
 
 async function postRemote(payload) {
@@ -350,55 +260,14 @@ async function postRemote(payload) {
   }
 }
 
-function unlockAdmin(event) {
-  event.preventDefault();
-  const user = adminLoginForm.elements.adminUser.value.trim();
-  const password = adminLoginForm.elements.adminPassword.value;
-  adminUnlocked = user === ADMIN_USER && password === ADMIN_PASSWORD;
-  adminMessage.textContent = adminUnlocked ? "" : "Usuario o contraseña no válidos.";
-  render();
-loadRemoteAppointments();
-}
-
-function savePurpose() {
-  config.purpose = purposeInput.value.trim() || DEFAULT_CONFIG.purpose;
-  config.description = descriptionInput.value.trim() || DEFAULT_CONFIG.description;
-  save(CONFIG_KEY, config);
-  render();
-loadRemoteAppointments();
-}
-
-function addBlockedSlot() {
-  const date = document.querySelector("#blockedDate").value;
-  const turn = document.querySelector("#blockedTurn").value;
-  if (!date || config.blockedSlots.some((item) => item.date === date && item.turn === turn)) return;
-  config.blockedSlots.push({ date, turn, reason: turn === "morning" ? "Mañana no disponible" : "Tarde no disponible" });
-  save(CONFIG_KEY, config);
-  render();
-loadRemoteAppointments();
-}
-
-function renderBlockedSlots() {
-  blockedList.innerHTML = "";
-  config.blockedSlots
-    .slice()
-    .sort((a, b) => `${a.date}${a.turn}`.localeCompare(`${b.date}${b.turn}`))
-    .forEach((blocked) => {
-      const item = document.createElement("div");
-      item.className = "blocked-item";
-      item.innerHTML = `<strong>${formatDate(parseDate(blocked.date))}</strong><span>${blocked.turn === "morning" ? "Mañana" : "Tarde"}</span>`;
-      const button = document.createElement("button");
-      button.type = "button";
-      button.textContent = "Liberar";
-      button.addEventListener("click", () => {
-        config.blockedSlots = config.blockedSlots.filter((slot) => slot !== blocked);
-        save(CONFIG_KEY, config);
-        render();
-loadRemoteAppointments();
-      });
-      item.appendChild(button);
-      blockedList.appendChild(item);
-    });
+function refreshSelfMatches() {
+  const name = selfForm.elements.selfName.value.trim();
+  const email = selfForm.elements.selfEmail.value.trim().toLowerCase();
+  if (!name || !email) return;
+  loadJsonp({ action: "self", name, email }, (data) => {
+    selfMatches = normalizeRemoteAppointments(data.appointments || []);
+    renderSelfResults();
+  }, "No se pudo consultar la cita. Inténtalo de nuevo.");
 }
 
 function getLockedTurn(dayAppointments) {
@@ -407,7 +276,7 @@ function getLockedTurn(dayAppointments) {
 }
 
 function getBlockedSlot(date, turn) {
-  return config.blockedSlots.find((item) => item.date === date && item.turn === turn);
+  return CONFIG.blockedSlots.find((item) => item.date === date && item.turn === turn);
 }
 
 function getScheduleBlock(date, time, turn) {
@@ -417,56 +286,6 @@ function getScheduleBlock(date, time, turn) {
   return false;
 }
 
-function buildSlots(baseHours, duration) {
-  if (duration === 60) return baseHours;
-  const result = [];
-  const end = addMinutes(baseHours.at(-1), 60);
-  let cursor = baseHours[0];
-  while (cursor < end) {
-    result.push(cursor);
-    cursor = addMinutes(cursor, duration);
-  }
-  return result;
-}
-
-function exportCsv() {
-  const headers = ["Fecha", "Hora", "Duración", "Nombre", "Puesto", "Correo", "Tipo de cita", "Comentario", "Creada el"];
-  const rows = appointments
-    .slice()
-    .sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))
-    .map((item) => [
-      item.date,
-      item.time,
-      item.duration,
-      item.name,
-      item.role,
-      item.email,
-      item.purpose,
-      item.notes,
-      item.createdAt,
-    ]);
-  const csv = [headers, ...rows].map((row) => row.map(csvCell).join(";")).join("\r\n");
-  downloadFile("citas-ia-grupo-escuela-pce.csv", `\uFEFF${csv}`, "text/csv;charset=utf-8");
-}
-function exportJson() {
-  const data = JSON.stringify({ config, appointments }, null, 2);
-  downloadFile("citas-ia-grupo-escuela-pce.json", data, "application/json");
-}
-
-function downloadFile(filename, content, type) {
-  const blob = new Blob([content], { type });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
-function csvCell(value) {
-  const text = String(value ?? "").replace(/"/g, '""');
-  return `"${text}"`;
-}
 function normalizeRemoteAppointments(rows) {
   return rows
     .map((row) => {
@@ -478,11 +297,11 @@ function normalizeRemoteAppointments(rows) {
         date,
         time,
         turn: row.turno || inferTurn(time),
-        duration: Number(row.duracion || row.Duracion || row["Duración"] || config.duration),
+        duration: Number(row.duracion || row.Duracion || row["Duración"] || CONFIG.duration),
         name: String(row.nombre || row["Nombre y apellidos"] || ""),
         role: String(row.puesto || row.Puesto || ""),
         email: String(row.email || row["Correo electrónico"] || "").toLowerCase(),
-        purpose: String(row.tipo_cita || row["Tipo de cita"] || config.purpose),
+        purpose: String(row.tipo_cita || row["Tipo de cita"] || CONFIG.purpose),
         notes: String(row.comentario || row["Comentario opcional"] || ""),
         createdAt: String(row.creada_el || row["Marca temporal"] || ""),
       };
@@ -492,8 +311,8 @@ function normalizeRemoteAppointments(rows) {
 
 function normalizeDateValue(value) {
   if (!value) return "";
-  if (value instanceof Date) return toISO(value);
   const text = String(value);
+  if (/^\d{4}-\d{2}-\d{2}T/.test(text)) return toISO(new Date(text));
   if (/^\d{4}-\d{2}-\d{2}/.test(text)) return text.slice(0, 10);
   const match = text.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
   if (match) return `${match[3]}-${match[2].padStart(2, "0")}-${match[1].padStart(2, "0")}`;
@@ -503,18 +322,17 @@ function normalizeDateValue(value) {
 function normalizeTimeValue(value) {
   if (!value) return "";
   const text = String(value);
-  const match = text.match(/(\d{1,2}):(\d{2})/);
-  if (match) return `${match[1].padStart(2, "0")}:${match[2]}`;
+  const cleanMatch = text.match(/^(\d{1,2}):(\d{2})/);
+  if (cleanMatch) return `${cleanMatch[1].padStart(2, "0")}:${cleanMatch[2]}`;
+  const exactSlot = [...MORNING, ...AFTERNOON].find((slot) => text.includes(`T${slot}`) || text.includes(` ${slot}`));
+  if (exactSlot) return exactSlot;
+  const isoMatch = text.match(/T(\d{2}):(\d{2})/);
+  if (isoMatch) return `${isoMatch[1]}:${isoMatch[2]}`;
   return text;
 }
 
 function inferTurn(time) {
   return time < "14:00" ? "morning" : "afternoon";
-}
-
-function refreshSelfMatches() {
-  const ids = new Set(selfMatches.map((item) => item.id));
-  selfMatches = appointments.filter((item) => ids.has(item.id));
 }
 
 function getMonday(date) {
@@ -536,13 +354,7 @@ function changeWeek(days) {
   selected = null;
   selectedSlot.textContent = "Sin seleccionar";
   render();
-loadRemoteAppointments();
-}
-
-function addMinutes(time, minutes) {
-  const [hours, mins] = time.split(":").map(Number);
-  const date = new Date(2000, 0, 1, hours, mins + minutes);
-  return date.toTimeString().slice(0, 5);
+  loadRemoteAppointments();
 }
 
 function parseDate(value) {
@@ -564,19 +376,6 @@ function formatDate(date) {
   return new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "short", year: "numeric" }).format(date);
 }
 
-function normalize(value) {
-  return value.trim().toLowerCase();
-}
-
-function loadConfig() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(CONFIG_KEY));
-    return stored ? { ...DEFAULT_CONFIG, ...stored } : { ...DEFAULT_CONFIG };
-  } catch {
-    return { ...DEFAULT_CONFIG };
-  }
-}
-
 function loadArray(key, fallback) {
   try {
     return JSON.parse(localStorage.getItem(key)) ?? fallback;
@@ -590,18 +389,7 @@ function save(key, value) {
 }
 
 function escapeHtml(value) {
-  return value.replace(/[&<>"']/g, (char) => {
+  return String(value || "").replace(/[&<>"']/g, (char) => {
     return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char];
   });
 }
-
-
-
-
-
-
-
-
-
-
-

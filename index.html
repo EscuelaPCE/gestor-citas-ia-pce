@@ -30,7 +30,6 @@
         <a href="#agenda">Agenda</a>
         <a href="#reserva">Reservar</a>
         <a href="#mi-cita">Mi cita</a>
-        <a href="#admin">Administración</a>
       </nav>
     </header>
 
@@ -136,88 +135,13 @@
           <div id="selfResults" class="appointments self-results"></div>
         </section>
       </section>
-
-      <section id="admin" class="admin">
-        <div class="section-head">
-          <div>
-            <p class="eyebrow">Uso interno</p>
-            <h2>Administración</h2>
-          </div>
-        </div>
-
-        <form id="adminLoginForm" class="admin-login">
-          <label>
-            Administrador
-            <input name="adminUser" autocomplete="username" required />
-          </label>
-          <label>
-            Contraseña
-            <input name="adminPassword" type="password" autocomplete="current-password" required />
-          </label>
-          <button class="primary" type="submit">Entrar</button>
-          <p id="adminMessage" class="form-message" role="status"></p>
-        </form>
-
-        <div id="adminPanel" hidden>
-          <div class="admin-grid">
-            <section class="config-card flat">
-              <h2>Tipo de cita</h2>
-              <label>
-                Intención
-                <input id="purposeInput" />
-              </label>
-              <label>
-                Descripción
-                <textarea id="descriptionInput" rows="3"></textarea>
-              </label>
-              <label>
-                Duración
-                <select id="duration">
-                  <option value="60">1 hora</option>
-                  <option value="45">45 minutos</option>
-                  <option value="30">30 minutos</option>
-                </select>
-              </label>
-              <button id="savePurpose" type="button">Guardar configuración</button>
-            </section>
-
-            <section class="config-card flat">
-              <h2>Bloqueos</h2>
-              <label>
-                Fecha
-                <input id="blockedDate" type="date" min="2026-09-14" max="2026-10-09" />
-              </label>
-              <label>
-                Turno
-                <select id="blockedTurn">
-                  <option value="morning">Mañana</option>
-                  <option value="afternoon">Tarde</option>
-                </select>
-              </label>
-              <button id="addBlockedSlot" type="button">Bloquear turno</button>
-              <div id="blockedList" class="blocked-list"></div>
-            </section>
-          </div>
-
-          <div class="section-head admin-list-head">
-            <div>
-              <p class="eyebrow">Citas reservadas</p>
-              <h2>Panel de Miguel</h2>
-            </div>
-            <div class="controls">
-              <button id="exportJson" type="button">Exportar JSON</button>
-              <button id="exportCsv" type="button">Exportar CSV</button>
-              <button id="adminLogout" type="button">Salir</button>
-            </div>
-          </div>
-          <div id="appointments" class="appointments"></div>
-        </div>
-      </section>
-    </main>
+</main>
 
     <script src="app.js"></script>
   </body>
 </html>
+
+
 
 
 
